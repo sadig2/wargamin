@@ -1,18 +1,30 @@
-import sys
-
-from app.serializer import deserializer
+from app.deserializer import deserializer
 
 if __name__ == "__main__":
-    added, deleted = deserializer()
-    prices = [order.price for order in added]
-    timestamp_substracted = [(d.timestamp -
-                             a.timestamp, a.price) for a in added for d in deleted if a.id == d.id]
-    flags = sys.argv
+    orders = deserializer()
+    current = []  # current state of order list in database
+    changed = []  # list of orders when max price changed
+    max_prices = []
+    price = 0
+    for order in orders:
+        if order.type == "I":
+            current.append(order)
+        if order.type == "E":
+            for cur in current:
+                if cur.id == order.id:
+                    current.remove(cur)
+        m_price = max(
+            [order.price for order in current if order.price], default=0)
 
-    if "max_price" in flags:
-        print(max(prices))
-    if "time" in flags:
-        delimiter = sum([k[0] for k in timestamp_substracted])
-        multipled_list = sum([k[0]*k[1] for k in timestamp_substracted])
-        awg = multipled_list/delimiter
-        print(round(awg, 2))
+        if price != m_price:
+            changed.append(order)
+            max_prices.append(m_price)
+            price = m_price
+
+    delimiter = 0
+    mult = 0
+    for i in range(len(changed)-1):
+        delimiter += changed[i+1].timestamp - changed[i].timestamp
+    for i in range(len(changed)-1):
+        mult += (changed[i+1].timestamp - changed[i].timestamp)*max_prices[i]
+    print(mult/delimiter)
