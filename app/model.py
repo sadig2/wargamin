@@ -7,3 +7,4 @@ class OrderBook():
     type: str = None
     id: int = None
     price: float = None
+#
